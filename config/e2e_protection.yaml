@@ -1,0 +1,6 @@
+e2e:
+  data_id: 0x1234
+  profile_id: 1
+  crc_type: "crc16"
+
+test_data: [0x01, 0x02, 0x03, 0x04, 0x05]

@@ -1,0 +1,19 @@
+network:
+  server:
+    host: "0.0.0.0"
+    port: 30495
+  client:
+    server_host: "127.0.0.1"
+    server_port: 30495
+    client_id: 0xABCD
+
+service:
+  service_id: 0x5000
+  instance_id: 0x0001
+  methods:
+    send_large_data: 0x0001
+    receive_large_data: 0x0002
+    echo_large_data: 0x0003
+
+tp:
+  mtu: 1400

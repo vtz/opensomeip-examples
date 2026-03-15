@@ -1,0 +1,16 @@
+network:
+  server:
+    host: "0.0.0.0"
+    port: 30491
+  client:
+    server_host: "127.0.0.1"
+    server_port: 30491
+    client_id: 0xABCD
+
+service:
+  service_id: 0x2000
+  instance_id: 0x0001
+  methods:
+    add: 0x0001
+    multiply: 0x0002
+    get_stats: 0x0003

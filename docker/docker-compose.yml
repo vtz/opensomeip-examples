@@ -1,0 +1,77 @@
+version: "3.9"
+
+x-python: &python-base
+  build:
+    context: ..
+    dockerfile: docker/Dockerfile.python
+  working_dir: /app
+
+x-cpp: &cpp-base
+  build:
+    context: ..
+    dockerfile: docker/Dockerfile.cpp
+  working_dir: /app
+
+services:
+  # ---------- Hello World ----------
+  hello-world-py-server:
+    <<: *python-base
+    command: python python/hello_world/server.py
+    ports: ["30490:30490/udp"]
+
+  hello-world-py-client:
+    <<: *python-base
+    command: python python/hello_world/client.py
+    environment:
+      OPENSOMEIP_CLIENT_SERVER_HOST: hello-world-py-server
+    depends_on: [hello-world-py-server]
+
+  hello-world-cpp-server:
+    <<: *cpp-base
+    command: ./bin/hello_world_server
+    ports: ["30490:30490/udp"]
+
+  hello-world-cpp-client:
+    <<: *cpp-base
+    command: ./bin/hello_world_client
+    environment:
+      OPENSOMEIP_CLIENT_SERVER_HOST: hello-world-cpp-server
+    depends_on: [hello-world-cpp-server]
+
+  # Cross-language: Python server + C++ client
+  hello-world-cross-server:
+    <<: *python-base
+    command: python python/hello_world/server.py
+    ports: ["30490:30490/udp"]
+
+  hello-world-cross-client:
+    <<: *cpp-base
+    command: ./bin/hello_world_client
+    environment:
+      OPENSOMEIP_CLIENT_SERVER_HOST: hello-world-cross-server
+    depends_on: [hello-world-cross-server]
+
+  # ---------- Method Calls ----------
+  method-calls-py-server:
+    <<: *python-base
+    command: python python/method_calls/server.py
+    ports: ["30491:30491/udp"]
+
+  method-calls-py-client:
+    <<: *python-base
+    command: python python/method_calls/client.py
+    environment:
+      OPENSOMEIP_CLIENT_SERVER_HOST: method-calls-py-server
+    depends_on: [method-calls-py-server]
+
+  # ---------- Events ----------
+  events-py-publisher:
+    <<: *python-base
+    command: python python/events/publisher.py
+    ports: ["30492:30492/udp"]
+
+  events-py-subscriber:
+    <<: *python-base
+    command: python python/events/subscriber.py
+    ports: ["30493:30493/udp"]
+    depends_on: [events-py-publisher]

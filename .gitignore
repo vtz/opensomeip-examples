@@ -1,0 +1,29 @@
+# Build artifacts
+build/
+cmake-build-*/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+.eggs/
+*.egg
+.venv/
+venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Compiled objects
+*.o
+*.so
+*.dylib
+*.dll
+*.exe

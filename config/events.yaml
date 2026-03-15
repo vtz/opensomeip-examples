@@ -1,0 +1,20 @@
+network:
+  publisher:
+    host: "0.0.0.0"
+    port: 30492
+  subscriber:
+    host: "0.0.0.0"
+    port: 30493
+
+service:
+  service_id: 0x3000
+  instance_id: 0x0001
+  events:
+    temperature: 0x8001
+    speed: 0x8002
+  eventgroups:
+    sensors: 0x0001
+
+timing:
+  temperature_interval_s: 2.0
+  speed_interval_s: 1.5

@@ -1,0 +1,16 @@
+network:
+  server:
+    host: "0.0.0.0"
+    port: 30494
+  client:
+    server_host: "127.0.0.1"
+    server_port: 30494
+    client_id: 0xABCD
+
+service:
+  service_id: 0x4000
+  instance_id: 0x0001
+  methods:
+    process_vehicle_data: 0x0001
+    get_sensor_array: 0x0002
+    echo_complex_struct: 0x0003

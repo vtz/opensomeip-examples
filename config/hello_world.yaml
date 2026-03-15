@@ -1,0 +1,13 @@
+network:
+  server:
+    host: "0.0.0.0"
+    port: 30490
+  client:
+    server_host: "127.0.0.1"
+    server_port: 30490
+
+service:
+  service_id: 0x1000
+  instance_id: 0x0001
+  methods:
+    say_hello: 0x0001
