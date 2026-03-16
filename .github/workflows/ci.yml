@@ -1,0 +1,243 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  python:
+    name: Python Examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r python/requirements.txt
+
+      - name: Test hello_world
+        run: |
+          timeout 15 python python/hello_world/server.py &
+          SERVER_PID=$!
+          sleep 2
+          python python/hello_world/client.py
+          CLIENT_EXIT=$?
+          kill $SERVER_PID 2>/dev/null || true
+          wait $SERVER_PID 2>/dev/null || true
+          exit $CLIENT_EXIT
+
+      - name: Test method_calls
+        run: |
+          timeout 15 python python/method_calls/server.py &
+          SERVER_PID=$!
+          sleep 2
+          python python/method_calls/client.py
+          CLIENT_EXIT=$?
+          kill $SERVER_PID 2>/dev/null || true
+          wait $SERVER_PID 2>/dev/null || true
+          exit $CLIENT_EXIT
+
+      - name: Test complex_types
+        run: |
+          timeout 15 python python/complex_types/server.py &
+          SERVER_PID=$!
+          sleep 2
+          python python/complex_types/client.py
+          CLIENT_EXIT=$?
+          kill $SERVER_PID 2>/dev/null || true
+          wait $SERVER_PID 2>/dev/null || true
+          exit $CLIENT_EXIT
+
+      - name: Test large_messages
+        run: |
+          timeout 15 python python/large_messages/server.py &
+          SERVER_PID=$!
+          sleep 2
+          python python/large_messages/client.py
+          CLIENT_EXIT=$?
+          kill $SERVER_PID 2>/dev/null || true
+          wait $SERVER_PID 2>/dev/null || true
+          exit $CLIENT_EXIT
+
+      - name: Test e2e_protection
+        run: python python/e2e_protection/basic_e2e.py
+
+      - name: Test events
+        run: |
+          timeout 15 python python/events/publisher.py &
+          PUB_PID=$!
+          sleep 2
+          timeout 10 python python/events/subscriber.py &
+          SUB_PID=$!
+          sleep 5
+          kill $SUB_PID 2>/dev/null || true
+          kill $PUB_PID 2>/dev/null || true
+          wait $SUB_PID 2>/dev/null || true
+          wait $PUB_PID 2>/dev/null || true
+
+      - name: Test sd_demo
+        run: |
+          timeout 5 python python/sd_demo/server.py || true
+
+  cpp:
+    name: C++ Examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential cmake git
+
+      - name: Cache CMake FetchContent dependencies
+        uses: actions/cache@v4
+        with:
+          path: cpp/build/_deps
+          key: cmake-deps-${{ hashFiles('cpp/CMakeLists.txt') }}
+
+      - name: Configure
+        run: cmake -B cpp/build -S cpp -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build cpp/build -j$(nproc)
+
+      - name: Test hello_world
+        run: |
+          timeout 15 ./cpp/build/bin/hello_world_server &
+          SERVER_PID=$!
+          sleep 2
+          ./cpp/build/bin/hello_world_client
+          CLIENT_EXIT=$?
+          kill $SERVER_PID 2>/dev/null || true
+          wait $SERVER_PID 2>/dev/null || true
+          exit $CLIENT_EXIT
+
+      - name: Test method_calls
+        run: |
+          timeout 15 ./cpp/build/bin/method_calls_server &
+          SERVER_PID=$!
+          sleep 2
+          ./cpp/build/bin/method_calls_client
+          CLIENT_EXIT=$?
+          kill $SERVER_PID 2>/dev/null || true
+          wait $SERVER_PID 2>/dev/null || true
+          exit $CLIENT_EXIT
+
+      - name: Test complex_types
+        run: |
+          timeout 15 ./cpp/build/bin/complex_types_server &
+          SERVER_PID=$!
+          sleep 2
+          ./cpp/build/bin/complex_types_client
+          CLIENT_EXIT=$?
+          kill $SERVER_PID 2>/dev/null || true
+          wait $SERVER_PID 2>/dev/null || true
+          exit $CLIENT_EXIT
+
+      - name: Test large_messages
+        run: |
+          timeout 15 ./cpp/build/bin/large_messages_server &
+          SERVER_PID=$!
+          sleep 2
+          ./cpp/build/bin/large_messages_client
+          CLIENT_EXIT=$?
+          kill $SERVER_PID 2>/dev/null || true
+          wait $SERVER_PID 2>/dev/null || true
+          exit $CLIENT_EXIT
+
+      - name: Test e2e_protection
+        run: ./cpp/build/bin/basic_e2e
+
+      - name: Test events
+        run: |
+          timeout 15 ./cpp/build/bin/events_publisher &
+          PUB_PID=$!
+          sleep 2
+          timeout 10 ./cpp/build/bin/events_subscriber &
+          SUB_PID=$!
+          sleep 5
+          kill $SUB_PID 2>/dev/null || true
+          kill $PUB_PID 2>/dev/null || true
+          wait $SUB_PID 2>/dev/null || true
+          wait $PUB_PID 2>/dev/null || true
+
+      - name: Test sd_demo
+        run: |
+          timeout 5 ./cpp/build/bin/sd_demo_server || true
+
+      - name: Upload C++ binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpp-binaries
+          path: cpp/build/bin/
+
+  combined:
+    name: Cross-Language Tests
+    runs-on: ubuntu-latest
+    needs: [cpp, python]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download C++ binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: cpp-binaries
+          path: cpp/build/bin/
+
+      - name: Make binaries executable
+        run: chmod +x cpp/build/bin/*
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install -r python/requirements.txt
+
+      - name: "hello_world: Python server + C++ client"
+        run: |
+          timeout 15 python python/hello_world/server.py &
+          SERVER_PID=$!
+          sleep 2
+          ./cpp/build/bin/hello_world_client
+          CLIENT_EXIT=$?
+          kill $SERVER_PID 2>/dev/null || true
+          wait $SERVER_PID 2>/dev/null || true
+          exit $CLIENT_EXIT
+
+      - name: "hello_world: C++ server + Python client"
+        run: |
+          timeout 15 ./cpp/build/bin/hello_world_server &
+          SERVER_PID=$!
+          sleep 2
+          python python/hello_world/client.py
+          CLIENT_EXIT=$?
+          kill $SERVER_PID 2>/dev/null || true
+          wait $SERVER_PID 2>/dev/null || true
+          exit $CLIENT_EXIT
+
+      - name: "method_calls: Python server + C++ client"
+        run: |
+          timeout 15 python python/method_calls/server.py &
+          SERVER_PID=$!
+          sleep 2
+          ./cpp/build/bin/method_calls_client
+          CLIENT_EXIT=$?
+          kill $SERVER_PID 2>/dev/null || true
+          wait $SERVER_PID 2>/dev/null || true
+          exit $CLIENT_EXIT
+
+      - name: "method_calls: C++ server + Python client"
+        run: |
+          timeout 15 ./cpp/build/bin/method_calls_server &
+          SERVER_PID=$!
+          sleep 2
+          python python/method_calls/client.py
+          CLIENT_EXIT=$?
+          kill $SERVER_PID 2>/dev/null || true
+          wait $SERVER_PID 2>/dev/null || true
+          exit $CLIENT_EXIT
