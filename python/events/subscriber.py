@@ -3,6 +3,17 @@
 
 Decodes 4-byte big-endian IEEE 754 float payload.
 Configuration from ``config/events.yaml``.
+
+Usage::
+
+    python python/events/subscriber.py
+    python python/events/subscriber.py --config /path/to/custom.yaml
+
+Cross-language::
+
+    # C++ publisher + Python subscriber
+    ./cpp/build/bin/events_publisher
+    python python/events/subscriber.py
 """
 
 from __future__ import annotations
@@ -16,8 +27,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from common.config import add_config_arg, load_config
 
-from opensomeip.events import EventSubscriber
 from opensomeip.transport import Endpoint, UdpTransport
+from opensomeip.types import MessageType
 
 
 def be_bytes_to_float(data: bytes) -> float:
@@ -34,30 +45,30 @@ def main() -> None:
     service_id = cfg["service"]["service_id"]
     temp_event = cfg["service"]["events"]["temperature"]
     speed_event = cfg["service"]["events"]["speed"]
-    eventgroup = cfg["service"]["eventgroups"]["sensors"]
 
     transport = UdpTransport(local_endpoint=Endpoint("0.0.0.0", port))
-    subscriber = EventSubscriber(transport, client_id=0x0001)
 
     def shutdown(*_: object) -> None:
         print("\nShutting down...")
-        subscriber.stop()
         transport.stop()
 
     signal.signal(signal.SIGINT, shutdown)
     signal.signal(signal.SIGTERM, shutdown)
 
-    subscriber.subscribe(eventgroup)
     transport.start()
-    subscriber.start()
 
     print("=== SOME/IP Events Subscriber (Python) ===")
     print(f"Service 0x{service_id:04X}, listening on port {port}")
-    print(f"  Subscribed to Temperature (0x{temp_event:04X})")
-    print(f"  Subscribed to Speed       (0x{speed_event:04X})")
+    print(f"  Temperature (0x{temp_event:04X})")
+    print(f"  Speed       (0x{speed_event:04X})")
     print("Waiting for events... Press Ctrl+C to exit\n")
 
-    for msg in subscriber.notifications():
+    for msg in transport.receiver:
+        if msg.message_type != MessageType.NOTIFICATION:
+            continue
+        if msg.message_id.service_id != service_id:
+            continue
+
         event_id = msg.message_id.method_id
         if len(msg.payload) < 4:
             print(f"Event 0x{event_id:04X}: Invalid data size ({len(msg.payload)} bytes)")

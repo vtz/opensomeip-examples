@@ -2,6 +2,8 @@ network:
   publisher:
     host: "0.0.0.0"
     port: 30492
+    subscriber_host: "127.0.0.1"
+    subscriber_port: 30493
   subscriber:
     host: "0.0.0.0"
     port: 30493

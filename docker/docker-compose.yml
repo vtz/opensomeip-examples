@@ -69,6 +69,8 @@ services:
     <<: *python-base
     command: python python/events/publisher.py
     ports: ["30492:30492/udp"]
+    environment:
+      OPENSOMEIP_PUBLISHER_SUBSCRIBER_HOST: events-py-subscriber
 
   events-py-subscriber:
     <<: *python-base
