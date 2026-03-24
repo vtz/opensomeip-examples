@@ -59,7 +59,10 @@ public:
                              RequestId(message->get_client_id(), message->get_session_id()),
                              MessageType::RESPONSE, ReturnCode::E_OK);
             response.set_payload(std::vector<uint8_t>(greeting.begin(), greeting.end()));
-            transport_->send_message(response, sender);
+            if (transport_->send_message(response, sender) != Result::SUCCESS) {
+                std::cerr << "Failed to send response" << std::endl;
+                return;
+            }
             std::cout << "Sent greeting: '" << greeting << "'" << std::endl;
         }
     }

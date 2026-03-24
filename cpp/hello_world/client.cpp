@@ -54,7 +54,9 @@ public:
         Endpoint server_ep(host, port);
         std::cout << "Sending message: '" << message << "' to "
                   << server_ep.to_string() << std::endl;
-        transport_->send_message(request, server_ep);
+        if (transport_->send_message(request, server_ep) != Result::SUCCESS) {
+            std::cerr << "Failed to send message" << std::endl;
+        }
     }
 
     void wait_for_response(int timeout_ms = 5000) {

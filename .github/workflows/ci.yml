@@ -85,79 +85,107 @@ jobs:
           timeout 5 python python/sd_demo/server.py || true
 
   cpp:
-    name: C++ Examples
-    runs-on: ubuntu-latest
+    name: C++ (${{ matrix.preset }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            preset: host-linux
+          - os: macos-latest
+            preset: host-macos
+          - os: windows-latest
+            preset: host-windows
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install build dependencies
+      - name: Install build dependencies (Linux)
+        if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y build-essential cmake git
 
       - name: Cache CMake FetchContent dependencies
         uses: actions/cache@v4
         with:
-          path: cpp/build/_deps
-          key: cmake-deps-${{ hashFiles('cpp/CMakeLists.txt') }}
+          path: cpp/build/${{ matrix.preset }}/_deps
+          key: cmake-deps-${{ matrix.preset }}-${{ hashFiles('cpp/CMakeLists.txt') }}
 
       - name: Configure
-        run: cmake -B cpp/build -S cpp -DCMAKE_BUILD_TYPE=Release
+        run: cmake --preset ${{ matrix.preset }}
+        working-directory: cpp
 
       - name: Build
-        run: cmake --build cpp/build -j$(nproc)
+        run: cmake --build --preset ${{ matrix.preset }} --config Release
+        working-directory: cpp
 
+      # ------------------------------------------------------------------
+      # Integration tests (Linux and macOS only -- require POSIX shell)
+      # ------------------------------------------------------------------
       - name: Test hello_world
+        if: runner.os != 'Windows'
+        timeout-minutes: 1
         run: |
-          timeout 15 ./cpp/build/bin/hello_world_server &
+          ./cpp/build/${{ matrix.preset }}/bin/hello_world_server &
           SERVER_PID=$!
           sleep 2
-          ./cpp/build/bin/hello_world_client
+          ./cpp/build/${{ matrix.preset }}/bin/hello_world_client
           CLIENT_EXIT=$?
           kill $SERVER_PID 2>/dev/null || true
           wait $SERVER_PID 2>/dev/null || true
           exit $CLIENT_EXIT
 
       - name: Test method_calls
+        if: runner.os != 'Windows'
+        timeout-minutes: 1
         run: |
-          timeout 15 ./cpp/build/bin/method_calls_server &
+          ./cpp/build/${{ matrix.preset }}/bin/method_calls_server &
           SERVER_PID=$!
           sleep 2
-          ./cpp/build/bin/method_calls_client
+          ./cpp/build/${{ matrix.preset }}/bin/method_calls_client
           CLIENT_EXIT=$?
           kill $SERVER_PID 2>/dev/null || true
           wait $SERVER_PID 2>/dev/null || true
           exit $CLIENT_EXIT
 
       - name: Test complex_types
+        if: runner.os != 'Windows'
+        timeout-minutes: 1
         run: |
-          timeout 15 ./cpp/build/bin/complex_types_server &
+          ./cpp/build/${{ matrix.preset }}/bin/complex_types_server &
           SERVER_PID=$!
           sleep 2
-          ./cpp/build/bin/complex_types_client
+          ./cpp/build/${{ matrix.preset }}/bin/complex_types_client
           CLIENT_EXIT=$?
           kill $SERVER_PID 2>/dev/null || true
           wait $SERVER_PID 2>/dev/null || true
           exit $CLIENT_EXIT
 
       - name: Test large_messages
+        if: runner.os != 'Windows'
+        timeout-minutes: 1
         run: |
-          timeout 15 ./cpp/build/bin/large_messages_server &
+          ./cpp/build/${{ matrix.preset }}/bin/large_messages_server &
           SERVER_PID=$!
           sleep 2
-          ./cpp/build/bin/large_messages_client
+          ./cpp/build/${{ matrix.preset }}/bin/large_messages_client
           CLIENT_EXIT=$?
           kill $SERVER_PID 2>/dev/null || true
           wait $SERVER_PID 2>/dev/null || true
           exit $CLIENT_EXIT
 
       - name: Test e2e_protection
-        run: ./cpp/build/bin/basic_e2e
+        if: runner.os != 'Windows'
+        timeout-minutes: 1
+        run: ./cpp/build/${{ matrix.preset }}/bin/basic_e2e
 
       - name: Test events
+        if: runner.os != 'Windows'
+        timeout-minutes: 1
         run: |
-          timeout 15 ./cpp/build/bin/events_publisher &
+          ./cpp/build/${{ matrix.preset }}/bin/events_publisher &
           PUB_PID=$!
           sleep 2
-          timeout 10 ./cpp/build/bin/events_subscriber &
+          ./cpp/build/${{ matrix.preset }}/bin/events_subscriber &
           SUB_PID=$!
           sleep 5
           kill $SUB_PID 2>/dev/null || true
@@ -166,14 +194,21 @@ jobs:
           wait $PUB_PID 2>/dev/null || true
 
       - name: Test sd_demo
+        if: runner.os != 'Windows'
+        timeout-minutes: 1
         run: |
-          timeout 5 ./cpp/build/bin/sd_demo_server || true
+          ./cpp/build/${{ matrix.preset }}/bin/sd_demo_server &
+          SERVER_PID=$!
+          sleep 5
+          kill $SERVER_PID 2>/dev/null || true
+          wait $SERVER_PID 2>/dev/null || true
 
       - name: Upload C++ binaries
+        if: matrix.preset == 'host-linux'
         uses: actions/upload-artifact@v4
         with:
           name: cpp-binaries
-          path: cpp/build/bin/
+          path: cpp/build/host-linux/bin/
 
   combined:
     name: Cross-Language Tests
@@ -186,10 +221,10 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: cpp-binaries
-          path: cpp/build/bin/
+          path: cpp/build/host-linux/bin/
 
       - name: Make binaries executable
-        run: chmod +x cpp/build/bin/*
+        run: chmod +x cpp/build/host-linux/bin/*
 
       - uses: actions/setup-python@v5
         with:
@@ -203,7 +238,7 @@ jobs:
           timeout 15 python python/hello_world/server.py &
           SERVER_PID=$!
           sleep 2
-          ./cpp/build/bin/hello_world_client
+          ./cpp/build/host-linux/bin/hello_world_client
           CLIENT_EXIT=$?
           kill $SERVER_PID 2>/dev/null || true
           wait $SERVER_PID 2>/dev/null || true
@@ -211,7 +246,7 @@ jobs:
 
       - name: "hello_world: C++ server + Python client"
         run: |
-          timeout 15 ./cpp/build/bin/hello_world_server &
+          timeout 15 ./cpp/build/host-linux/bin/hello_world_server &
           SERVER_PID=$!
           sleep 2
           python python/hello_world/client.py
@@ -225,7 +260,7 @@ jobs:
           timeout 15 python python/method_calls/server.py &
           SERVER_PID=$!
           sleep 2
-          ./cpp/build/bin/method_calls_client
+          ./cpp/build/host-linux/bin/method_calls_client
           CLIENT_EXIT=$?
           kill $SERVER_PID 2>/dev/null || true
           wait $SERVER_PID 2>/dev/null || true
@@ -233,7 +268,7 @@ jobs:
 
       - name: "method_calls: C++ server + Python client"
         run: |
-          timeout 15 ./cpp/build/bin/method_calls_server &
+          timeout 15 ./cpp/build/host-linux/bin/method_calls_server &
           SERVER_PID=$!
           sleep 2
           python python/method_calls/client.py

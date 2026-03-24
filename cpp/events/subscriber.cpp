@@ -32,39 +32,32 @@ int main(int argc, char* argv[]) {
     examples::Config cfg("events", config_path);
 
     auto service_id = cfg.get_uint16("service", "service_id", 0x3000);
+    auto instance_id = cfg.get_uint16("service", "instance_id", 0x0001);
     auto temp_event = cfg.get_uint16("service.events", "temperature", 0x8001);
     auto speed_event = cfg.get_uint16("service.events", "speed", 0x8002);
     auto eventgroup = cfg.get_uint16("service.eventgroups", "sensors", 0x0001);
 
-    EventSubscriber subscriber(service_id);
-
-    subscriber.set_event_handler(temp_event,
-        [](const EventNotification& n) {
-            if (n.event_data.size() < 4) return;
-            uint32_t bits = (n.event_data[0]<<24)|(n.event_data[1]<<16)|
-                            (n.event_data[2]<<8)|n.event_data[3];
-            float val;
-            std::memcpy(&val, &bits, sizeof(float));
-            std::cout << "Temperature Event: " << val << " C" << std::endl;
-        });
-
-    subscriber.set_event_handler(speed_event,
-        [](const EventNotification& n) {
-            if (n.event_data.size() < 4) return;
-            uint32_t bits = (n.event_data[0]<<24)|(n.event_data[1]<<16)|
-                            (n.event_data[2]<<8)|n.event_data[3];
-            float val;
-            std::memcpy(&val, &bits, sizeof(float));
-            std::cout << "Speed Event: " << val << " km/h" << std::endl;
-        });
-
-    subscriber.subscribe_event(temp_event, eventgroup);
-    subscriber.subscribe_event(speed_event, eventgroup);
+    EventSubscriber subscriber(0x0001);
 
     if (!subscriber.initialize()) {
         std::cerr << "Failed to initialize subscriber" << std::endl;
         return 1;
     }
+
+    subscriber.subscribe_eventgroup(service_id, instance_id, eventgroup,
+        [temp_event, speed_event](const EventNotification& n) {
+            if (n.event_data.size() < 4) return;
+            uint32_t bits = (n.event_data[0]<<24)|(n.event_data[1]<<16)|
+                            (n.event_data[2]<<8)|n.event_data[3];
+            float val;
+            std::memcpy(&val, &bits, sizeof(float));
+
+            if (n.event_id == temp_event) {
+                std::cout << "Temperature Event: " << val << " C" << std::endl;
+            } else if (n.event_id == speed_event) {
+                std::cout << "Speed Event: " << val << " km/h" << std::endl;
+            }
+        });
 
     std::cout << "=== SOME/IP Events Subscriber (C++) ===" << std::endl;
     std::cout << "Service 0x" << std::hex << service_id << std::dec << std::endl;

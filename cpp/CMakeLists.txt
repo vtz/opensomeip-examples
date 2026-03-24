@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.21)
 project(opensomeip-examples VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -14,8 +14,7 @@ include(FetchContent)
 FetchContent_Declare(
     opensomeip
     GIT_REPOSITORY https://github.com/vtz/opensomeip.git
-    GIT_TAG        main
-    GIT_SHALLOW    TRUE
+    GIT_TAG        962e78d7b58a90001bef673852ea227f236dfb81
 )
 set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -29,6 +28,8 @@ FetchContent_Declare(
 )
 set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+# Avoid custom target name collision with opensomeip's `format` target.
+set(YAML_CPP_FORMAT_SOURCE OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(yaml-cpp)
 
 # -------------------------------------------------------------------

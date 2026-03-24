@@ -1,0 +1,51 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_POLICY_VERSION_MINIMUM": "3.5"
+      }
+    },
+    {
+      "name": "host-linux",
+      "displayName": "Host Linux (POSIX)",
+      "description": "Native Linux build with POSIX threading and BSD sockets",
+      "inherits": "base"
+    },
+    {
+      "name": "host-macos",
+      "displayName": "Host macOS (POSIX)",
+      "description": "Native macOS build with POSIX threading and BSD sockets",
+      "inherits": "host-linux"
+    },
+    {
+      "name": "host-windows",
+      "displayName": "Host Windows (MSVC)",
+      "description": "Native Windows build with Winsock2 networking",
+      "inherits": "base"
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "host-linux",
+      "configurePreset": "host-linux"
+    },
+    {
+      "name": "host-macos",
+      "configurePreset": "host-macos"
+    },
+    {
+      "name": "host-windows",
+      "configurePreset": "host-windows"
+    }
+  ]
+}

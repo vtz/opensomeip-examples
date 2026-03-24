@@ -46,7 +46,9 @@ public:
                          RequestId(msg->get_client_id(), msg->get_session_id()),
                          MessageType::RESPONSE, ReturnCode::E_OK);
         response.set_payload(std::vector<uint8_t>(reply.begin(), reply.end()));
-        transport_->send_message(response, sender);
+        if (transport_->send_message(response, sender) != Result::SUCCESS) {
+            std::cerr << "Failed to send response" << std::endl;
+        }
     }
 
     void on_connection_lost(const Endpoint&) override {}

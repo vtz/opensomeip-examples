@@ -68,14 +68,10 @@ public:
             Serializer ser;
             ser.serialize_uint32(static_cast<uint32_t>(sensors.size()));
             for (auto& s : sensors) {
-                Serializer inner;
-                inner.serialize_uint8(s.sensor_id);
-                inner.serialize_float(s.value);
-                inner.serialize_string(s.unit);
-                inner.serialize_uint32(s.timestamp);
-                auto buf = inner.get_buffer();
-                ser.serialize_uint32(static_cast<uint32_t>(buf.size()));
-                ser.serialize_raw(buf);
+                ser.serialize_uint8(s.sensor_id);
+                ser.serialize_float(s.value);
+                ser.serialize_string(s.unit);
+                ser.serialize_uint32(s.timestamp);
             }
             out = ser.get_buffer();
             return RpcResult::SUCCESS;

@@ -62,7 +62,6 @@ public:
 
         std::cout << "Received " << count.get_value() << " sensor readings:" << std::endl;
         for (uint32_t i = 0; i < count.get_value(); ++i) {
-            des.deserialize_uint32(); // length
             auto sid = des.deserialize_uint8();
             auto val = des.deserialize_float();
             auto unit = des.deserialize_string();
