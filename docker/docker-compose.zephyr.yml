@@ -1,0 +1,32 @@
+################################################################################
+# Copyright (c) 2025 Vinicius Tadeu Zein
+#
+# SPDX-License-Identifier: Apache-2.0
+################################################################################
+
+# Docker Compose for Zephyr development / Renode simulation.
+#
+# Usage:
+#   docker compose -f docker/docker-compose.zephyr.yml build
+#   docker compose -f docker/docker-compose.zephyr.yml run zephyr-dev bash
+#
+# Inside the container:
+#   ./scripts/zephyr_build.sh native_sim all
+#   ./scripts/zephyr_build.sh s32k388_renode e2e_protection
+#   ./scripts/run_renode_test.sh e2e_protection
+
+services:
+  zephyr-dev:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.zephyr
+    volumes:
+      - ..:/workspace/examples
+    working_dir: /workspace/examples
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    network_mode: host
+    stdin_open: true
+    tty: true

@@ -1,8 +1,8 @@
 # opensomeip-examples
 
-Standalone examples showcasing the [opensomeip](https://github.com/vtz/opensomeip) SOME/IP stack in **C++** and **Python**.
+Standalone examples showcasing the [opensomeip](https://github.com/vtz/opensomeip) SOME/IP stack in **C++**, **Python**, and **Zephyr RTOS** (with [Renode](https://renode.io/) simulation).
 
-Each example is wire-compatible across languages -- you can run a Python server with a C++ client (or vice versa).
+Each example is wire-compatible across languages -- you can run a Python server with a C++ client (or vice versa). The Zephyr examples target embedded platforms and can run on `native_sim` (host simulation) or `s32k388_renode` (NXP S32K388 simulated in Renode).
 
 ## Repository Structure
 
@@ -11,20 +11,22 @@ opensomeip-examples/
 ├── config/            # Shared YAML configuration (read by both Python and C++)
 ├── python/            # Python examples (uses opensomeip from PyPI)
 ├── cpp/               # C++ examples (fetches opensomeip via CMake FetchContent)
-└── docker/            # Docker Compose for cross-language testing
+├── zephyr/            # Zephyr RTOS examples (native_sim + S32K388 Renode)
+├── scripts/           # Build & test helpers for Zephyr / Renode
+└── docker/            # Docker Compose for cross-language and Zephyr testing
 ```
 
 ## Examples
 
-| Example | Pattern | Python | C++ | Config |
-|---------|---------|--------|-----|--------|
-| **hello_world** | Request/Response (UDP) | server, client | server, client | `config/hello_world.yaml` |
-| **method_calls** | Calculator RPC | server, client | server, client | `config/method_calls.yaml` |
-| **events** | Pub/Sub (sensors) | publisher, subscriber | publisher, subscriber | `config/events.yaml` |
-| **sd_demo** | Service Discovery | server | server | `config/sd_demo.yaml` |
-| **complex_types** | Serialization | server, client | server, client | `config/complex_types.yaml` |
-| **large_messages** | TP segmentation | server, client | server, client | `config/large_messages.yaml` |
-| **e2e_protection** | CRC / counter | standalone | standalone | `config/e2e_protection.yaml` |
+| Example | Pattern | Python | C++ | Zephyr | Config |
+|---------|---------|--------|-----|--------|--------|
+| **hello_world** | Request/Response (UDP) | server, client | server, client | server, client | `config/hello_world.yaml` |
+| **method_calls** | Calculator RPC | server, client | server, client | server, client | `config/method_calls.yaml` |
+| **events** | Pub/Sub (sensors) | publisher, subscriber | publisher, subscriber | publisher, subscriber | `config/events.yaml` |
+| **sd_demo** | Service Discovery | server | server | -- | `config/sd_demo.yaml` |
+| **complex_types** | Serialization | server, client | server, client | -- | `config/complex_types.yaml` |
+| **large_messages** | TP segmentation | server, client | server, client | -- | `config/large_messages.yaml` |
+| **e2e_protection** | CRC / counter | standalone | standalone | standalone | `config/e2e_protection.yaml` |
 
 ## Quick Start
 
@@ -74,6 +76,42 @@ python python/hello_world/server.py
 ./cpp/build/bin/hello_world_client
 ```
 
+### Zephyr (native_sim)
+
+```bash
+# Prerequisites: Zephyr workspace, opensomeip source
+export ZEPHYR_BASE=~/zephyrproject/zephyr
+export OPENSOMEIP_ROOT=~/opensomeip
+
+# Build all examples for native_sim
+./scripts/zephyr_build.sh native_sim all
+
+# Run the standalone e2e_protection test
+./build/zephyr/native_sim_e2e_protection/zephyr/zephyr.exe
+```
+
+### Zephyr (S32K388 Renode)
+
+```bash
+# Build for the Renode-simulated S32K388
+./scripts/zephyr_build.sh s32k388_renode e2e_protection
+
+# Run on Renode
+./scripts/run_renode_test.sh e2e_protection
+```
+
+### Zephyr via Docker
+
+```bash
+# Build and enter the Zephyr dev container
+docker compose -f docker/docker-compose.zephyr.yml build
+docker compose -f docker/docker-compose.zephyr.yml run zephyr-dev bash
+
+# Inside the container:
+./scripts/zephyr_build.sh native_sim all
+./scripts/run_renode_test.sh e2e_protection
+```
+
 ## Configuration
 
 All examples read from shared YAML config files in `config/`. This ensures both languages agree on ports, service IDs, and other parameters.
@@ -119,6 +157,35 @@ python python/hello_world/server.py --config /path/to/custom.yaml
 | 30494 | complex_types |
 | 30495 | large_messages |
 | 30500 | sd_demo service |
+
+## Zephyr / Renode Targets
+
+The `zephyr/` directory contains Zephyr RTOS versions of the examples, built with [west](https://docs.zephyrproject.org/latest/develop/west/index.html) and the opensomeip Zephyr module.
+
+| Target | Board | Description |
+|--------|-------|-------------|
+| `native_sim` | Zephyr native simulator | Runs on the host as a Linux process -- ideal for CI and development |
+| `s32k388_renode` | NXP S32K388 (Renode) | ARM Cortex-M7 simulated in [Renode](https://renode.io/) with GMAC Ethernet |
+
+### Zephyr examples
+
+| App | SOME/IP Modules | Notes |
+|-----|----------------|-------|
+| `hello_world_server` | transport (UDP) | Listens for requests, sends responses |
+| `hello_world_client` | transport (UDP) | Sends 3 requests, validates responses |
+| `method_calls_server` | RPC | Calculator service (add, multiply, stats) |
+| `method_calls_client` | RPC | Calls calculator methods, validates results |
+| `events_publisher` | events | Publishes temperature and speed events |
+| `events_subscriber` | events | Subscribes to sensor event group |
+| `e2e_protection` | E2E | Standalone CRC / counter / corruption test |
+
+### Environment variables
+
+| Variable | Description |
+|----------|-------------|
+| `ZEPHYR_BASE` | Path to the Zephyr RTOS source tree |
+| `OPENSOMEIP_ROOT` | Path to the opensomeip source tree |
+| `RENODE_TIMEOUT` | Renode simulation timeout in seconds (default: 15) |
 
 ## License
 

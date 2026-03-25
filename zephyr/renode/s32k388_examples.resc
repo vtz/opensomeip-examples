@@ -1,0 +1,37 @@
+################################################################################
+# Renode simulation script for NXP S32K388 + opensomeip examples.
+#
+# Usage:
+#   renode -e '$firmware=@path/to/zephyr.elf; i @zephyr/renode/s32k388_examples.resc'
+#
+# Or from the run_renode_test.sh script:
+#   ./scripts/run_renode_test.sh e2e_protection
+#
+# Copyright (c) 2025 Vinicius Tadeu Zein
+# SPDX-License-Identifier: Apache-2.0
+################################################################################
+
+using sysbus
+
+mach create "s32k388"
+machine LoadPlatformDescription @platforms/cpus/nxp-s32k388.repl
+
+# GMAC Ethernet with virtual switch (for networked examples)
+emulation CreateSwitch "switch0"
+connector Connect sysbus.gmac switch0
+
+# Host TAP interface for communicating with the simulated MCU
+emulation CreateTap "tap0" "tap0"
+connector Connect host.tap switch0
+
+# Load firmware -- $firmware must be set before sourcing this script
+macro reset
+"""
+    sysbus LoadELF $firmware
+"""
+runMacro $reset
+
+showAnalyzer sysbus.lpuart0
+
+echo "S32K388 opensomeip example simulation ready."
+echo "Use 'start' to begin simulation."

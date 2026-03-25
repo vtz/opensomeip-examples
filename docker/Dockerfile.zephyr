@@ -1,0 +1,66 @@
+################################################################################
+# Copyright (c) 2025 Vinicius Tadeu Zein
+#
+# SPDX-License-Identifier: Apache-2.0
+################################################################################
+
+# Zephyr development environment for opensomeip examples.
+# Includes Zephyr SDK, west, and Renode for S32K388 simulation.
+#
+# Usage:
+#   docker compose -f docker/docker-compose.zephyr.yml build
+#   docker compose -f docker/docker-compose.zephyr.yml run zephyr-dev bash
+
+FROM ghcr.io/zephyrproject-rtos/ci:v0.27.4
+
+ARG ZEPHYR_SDK_VERSION=0.16.8
+ARG RENODE_VERSION=1.15.3
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    iproute2 \
+    net-tools \
+    iputils-ping \
+    bridge-utils \
+    libpcap-dev \
+    socat \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Renode for S32K388 simulation
+RUN wget -q https://github.com/renode/renode/releases/download/v${RENODE_VERSION}/renode-${RENODE_VERSION}.linux-portable.tar.gz \
+    && mkdir -p /opt/renode \
+    && tar xzf renode-${RENODE_VERSION}.linux-portable.tar.gz -C /opt/renode --strip-components=1 \
+    && rm renode-${RENODE_VERSION}.linux-portable.tar.gz \
+    && ln -s /opt/renode/renode /usr/local/bin/renode
+
+WORKDIR /workspace
+
+# Initialize Zephyr workspace
+RUN west init /workspace/zephyrproject && \
+    cd /workspace/zephyrproject && \
+    west update --narrow -o=--depth=1 && \
+    west zephyr-export
+
+# Build Zephyr net-tools for TAP interface support
+RUN cd /workspace/zephyrproject/tools/net-tools && make
+
+ENV ZEPHYR_BASE=/workspace/zephyrproject/zephyr
+ENV ZEPHYR_TOOLCHAIN_VARIANT=zephyr
+ENV ZEPHYR_SDK_INSTALL_DIR=/opt/toolchains/zephyr-sdk-${ZEPHYR_SDK_VERSION}
+
+RUN groupadd -r zephyrci && useradd -r -g zephyrci -m -d /home/zephyrci zephyrci \
+    && chown -R zephyrci:zephyrci /workspace /opt/renode
+
+USER zephyrci
+
+# Clone opensomeip for use as a Zephyr module
+ARG OPENSOMEIP_COMMIT=962e78d7b58a90001bef673852ea227f236dfb81
+RUN git clone https://github.com/vtz/opensomeip.git /workspace/opensomeip \
+    && cd /workspace/opensomeip \
+    && git checkout ${OPENSOMEIP_COMMIT}
+
+ENV OPENSOMEIP_ROOT=/workspace/opensomeip
+
+# Examples source will be mounted at /workspace/examples
+WORKDIR /workspace/examples
