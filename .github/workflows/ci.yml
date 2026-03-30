@@ -225,7 +225,7 @@ jobs:
             run_tests: false
     env:
       ZEPHYR_SDK_VERSION: "0.17.0"
-      OPENSOMEIP_COMMIT: "4b76d1819c47d84907fb313124fe9ab45c0b87e5"
+      OPENSOMEIP_COMMIT: "v0.0.4"
     steps:
       - uses: actions/checkout@v4
 

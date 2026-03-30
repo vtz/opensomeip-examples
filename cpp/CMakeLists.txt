@@ -14,7 +14,7 @@ include(FetchContent)
 FetchContent_Declare(
     opensomeip
     GIT_REPOSITORY https://github.com/vtz/opensomeip.git
-    GIT_TAG        4b76d1819c47d84907fb313124fe9ab45c0b87e5
+    GIT_TAG        v0.0.4
 )
 set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
