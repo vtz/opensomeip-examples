@@ -274,6 +274,7 @@ jobs:
           ZEPHYR_SDK_INSTALL_DIR: ~/zephyr-sdk-0.17.0
           OPENSOMEIP_ROOT: ~/opensomeip
         run: |
+          cd ~/zephyrproject
           BOARD="${{ matrix.target }}"
           for app in ${{ matrix.apps }}; do
             echo "=== Building $app for $BOARD ==="
@@ -281,8 +282,8 @@ jobs:
             if [ "$BOARD" = "s32k388_renode" ]; then
               EXTRA_ARGS="-DBOARD_ROOT=$OPENSOMEIP_ROOT/zephyr"
             fi
-            west build -b "$BOARD" "zephyr/$app" \
-              -d "build/zephyr/${BOARD}_${app}" \
+            west build -b "$BOARD" "$GITHUB_WORKSPACE/zephyr/$app" \
+              -d "$GITHUB_WORKSPACE/build/zephyr/${BOARD}_${app}" \
               --pristine auto -- \
               -DOPENSOMEIP_ROOT="$OPENSOMEIP_ROOT" $EXTRA_ARGS
           done
@@ -293,7 +294,7 @@ jobs:
           ZEPHYR_BASE: ~/zephyrproject/zephyr
         run: |
           echo "=== Running e2e_protection ==="
-          timeout 30 ./build/zephyr/native_sim_e2e_protection/zephyr/zephyr.exe
+          timeout 30 $GITHUB_WORKSPACE/build/zephyr/native_sim_e2e_protection/zephyr/zephyr.exe
 
   combined:
     name: Cross-Language Tests
