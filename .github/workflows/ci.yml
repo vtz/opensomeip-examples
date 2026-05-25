@@ -280,7 +280,7 @@ jobs:
             echo "=== Building $app for $BOARD ==="
             EXTRA_ARGS=""
             if [ "$BOARD" = "s32k388_renode" ]; then
-              EXTRA_ARGS="-DBOARD_ROOT=$OPENSOMEIP_ROOT/zephyr"
+              EXTRA_ARGS="-DBOARD_ROOT=$OPENSOMEIP_ROOT/zephyr -DSOC_ROOT=$OPENSOMEIP_ROOT/zephyr"
             fi
             west build -b "$BOARD" "$GITHUB_WORKSPACE/zephyr/$app" \
               -d "$GITHUB_WORKSPACE/build/zephyr/${BOARD}_${app}" \
@@ -294,7 +294,9 @@ jobs:
           ZEPHYR_BASE: ~/zephyrproject/zephyr
         run: |
           echo "=== Running e2e_protection ==="
-          timeout 30 $GITHUB_WORKSPACE/build/zephyr/native_sim_e2e_protection/zephyr/zephyr.exe
+          timeout 30 $GITHUB_WORKSPACE/build/zephyr/native_sim_e2e_protection/zephyr/zephyr.exe \
+            2>&1 | tee /tmp/e2e_output.log || true
+          grep -q "0 failed" /tmp/e2e_output.log
 
   combined:
     name: Cross-Language Tests
