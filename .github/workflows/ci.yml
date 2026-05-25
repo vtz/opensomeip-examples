@@ -272,9 +272,9 @@ jobs:
           ZEPHYR_BASE: ~/zephyrproject/zephyr
           ZEPHYR_TOOLCHAIN_VARIANT: zephyr
           ZEPHYR_SDK_INSTALL_DIR: ~/zephyr-sdk-0.17.0
-          OPENSOMEIP_ROOT: ~/opensomeip
         run: |
           cd ~/zephyrproject
+          OPENSOMEIP_ROOT="$HOME/opensomeip"
           BOARD="${{ matrix.target }}"
           for app in ${{ matrix.apps }}; do
             echo "=== Building $app for $BOARD ==="
