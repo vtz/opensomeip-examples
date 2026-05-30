@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   python:
     name: Python Examples
@@ -224,8 +227,9 @@ jobs:
             apps: "e2e_protection hello_world_server"
             run_tests: false
     env:
-      ZEPHYR_SDK_VERSION: "0.17.0"
-      OPENSOMEIP_COMMIT: "v0.0.4"
+      ZEPHYR_SDK_VERSION: "1.0.1"
+      ZEPHYR_VERSION: "v4.4.0"
+      OPENSOMEIP_COMMIT: "v0.1.0"
     steps:
       - uses: actions/checkout@v4
 
@@ -242,7 +246,7 @@ jobs:
 
       - name: Initialize Zephyr workspace
         run: |
-          west init ~/zephyrproject
+          west init ~/zephyrproject --mr $ZEPHYR_VERSION
           cd ~/zephyrproject
           west update --narrow -o=--depth=1
           west zephyr-export
@@ -254,12 +258,12 @@ jobs:
           wget -q https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${ZEPHYR_SDK_VERSION}/zephyr-sdk-${ZEPHYR_SDK_VERSION}_linux-x86_64_minimal.tar.xz
           tar xf zephyr-sdk-${ZEPHYR_SDK_VERSION}_linux-x86_64_minimal.tar.xz -C ~/
           ~/zephyr-sdk-${ZEPHYR_SDK_VERSION}/setup.sh -h -c
-          # Install host and ARM toolchains
-          cd ~/zephyr-sdk-${ZEPHYR_SDK_VERSION}
-          wget -q https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${ZEPHYR_SDK_VERSION}/toolchain_linux-x86_64_x86_64-zephyr-elf.tar.xz
-          tar xf toolchain_linux-x86_64_x86_64-zephyr-elf.tar.xz
-          wget -q https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${ZEPHYR_SDK_VERSION}/toolchain_linux-x86_64_arm-zephyr-eabi.tar.xz
-          tar xf toolchain_linux-x86_64_arm-zephyr-eabi.tar.xz
+          mkdir -p ~/zephyr-sdk-${ZEPHYR_SDK_VERSION}/gnu
+          cd ~/zephyr-sdk-${ZEPHYR_SDK_VERSION}/gnu
+          wget -q https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${ZEPHYR_SDK_VERSION}/toolchain_gnu_linux-x86_64_x86_64-zephyr-elf.tar.xz
+          tar xf toolchain_gnu_linux-x86_64_x86_64-zephyr-elf.tar.xz
+          wget -q https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${ZEPHYR_SDK_VERSION}/toolchain_gnu_linux-x86_64_arm-zephyr-eabi.tar.xz
+          tar xf toolchain_gnu_linux-x86_64_arm-zephyr-eabi.tar.xz
 
       - name: Clone opensomeip
         run: |
@@ -271,18 +275,19 @@ jobs:
         env:
           ZEPHYR_BASE: ~/zephyrproject/zephyr
           ZEPHYR_TOOLCHAIN_VARIANT: zephyr
-          ZEPHYR_SDK_INSTALL_DIR: ~/zephyr-sdk-0.17.0
-          OPENSOMEIP_ROOT: ~/opensomeip
         run: |
+          cd ~/zephyrproject
+          export ZEPHYR_SDK_INSTALL_DIR="$HOME/zephyr-sdk-$ZEPHYR_SDK_VERSION"
+          OPENSOMEIP_ROOT="$HOME/opensomeip"
           BOARD="${{ matrix.target }}"
           for app in ${{ matrix.apps }}; do
             echo "=== Building $app for $BOARD ==="
             EXTRA_ARGS=""
             if [ "$BOARD" = "s32k388_renode" ]; then
-              EXTRA_ARGS="-DBOARD_ROOT=$OPENSOMEIP_ROOT/zephyr"
+              EXTRA_ARGS="-DBOARD_ROOT=$OPENSOMEIP_ROOT/zephyr -DSOC_ROOT=$OPENSOMEIP_ROOT/zephyr"
             fi
-            west build -b "$BOARD" "zephyr/$app" \
-              -d "build/zephyr/${BOARD}_${app}" \
+            west build -b "$BOARD" "$GITHUB_WORKSPACE/zephyr/$app" \
+              -d "$GITHUB_WORKSPACE/build/zephyr/${BOARD}_${app}" \
               --pristine auto -- \
               -DOPENSOMEIP_ROOT="$OPENSOMEIP_ROOT" $EXTRA_ARGS
           done
@@ -293,7 +298,9 @@ jobs:
           ZEPHYR_BASE: ~/zephyrproject/zephyr
         run: |
           echo "=== Running e2e_protection ==="
-          timeout 30 ./build/zephyr/native_sim_e2e_protection/zephyr/zephyr.exe
+          timeout 30 $GITHUB_WORKSPACE/build/zephyr/native_sim_e2e_protection/zephyr/zephyr.exe \
+            2>&1 | tee /tmp/e2e_output.log || true
+          grep -q "0 failed" /tmp/e2e_output.log
 
   combined:
     name: Cross-Language Tests
