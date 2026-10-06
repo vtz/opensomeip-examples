@@ -55,7 +55,7 @@ RUN groupadd -r zephyrci && useradd -r -g zephyrci -m -d /home/zephyrci zephyrci
 USER zephyrci
 
 # Clone opensomeip for use as a Zephyr module
-ARG OPENSOMEIP_COMMIT=v0.0.4
+ARG OPENSOMEIP_COMMIT=v0.1.0
 RUN git clone https://github.com/vtz/opensomeip.git /workspace/opensomeip \
     && cd /workspace/opensomeip \
     && git checkout ${OPENSOMEIP_COMMIT}
