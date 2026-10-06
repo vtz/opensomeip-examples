@@ -15,16 +15,19 @@
 #include "config.h"
 #include <rpc/rpc_server.h>
 #include <rpc/rpc_types.h>
+#include <transport/endpoint.h>
 
 using namespace someip;
 using namespace someip::rpc;
+using namespace someip::transport;
 
 static std::atomic<bool> running{true};
 static void signal_handler(int) { running = false; }
 
 class CalculatorServer {
 public:
-    explicit CalculatorServer(uint16_t service_id) : server_(service_id) {}
+    CalculatorServer(uint16_t service_id, const std::string& host, uint16_t port)
+        : server_(service_id, 0x01, Endpoint(host, port)) {}
 
     bool initialize(uint16_t add_id, uint16_t mul_id, uint16_t stats_id) {
         server_.register_method(add_id, [this](uint16_t, uint16_t,
@@ -90,6 +93,7 @@ int main(int argc, char* argv[]) {
     auto add_id     = cfg.get_uint16("service.methods", "add", 0x0001);
     auto mul_id     = cfg.get_uint16("service.methods", "multiply", 0x0002);
     auto stats_id   = cfg.get_uint16("service.methods", "get_stats", 0x0003);
+    auto host       = cfg.get_string("network.server", "host", "0.0.0.0");
     auto port       = cfg.get_uint16("network.server", "port", 30491);
 
     std::cout << "=== SOME/IP Method Calls Server (C++) ===" << std::endl;
@@ -97,7 +101,7 @@ int main(int argc, char* argv[]) {
               << std::dec << " on port " << port << std::endl;
     std::cout << "Press Ctrl+C to exit\n" << std::endl;
 
-    CalculatorServer server(service_id);
+    CalculatorServer server(service_id, host, port);
     if (!server.initialize(add_id, mul_id, stats_id)) {
         std::cerr << "Failed to initialize server" << std::endl;
         return 1;

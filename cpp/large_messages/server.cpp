@@ -17,10 +17,12 @@
 #include <rpc/rpc_server.h>
 #include <rpc/rpc_types.h>
 #include <tp/tp_manager.h>
+#include <transport/endpoint.h>
 
 using namespace someip;
 using namespace someip::rpc;
 using namespace someip::tp;
+using namespace someip::transport;
 
 static std::atomic<bool> running{true};
 static void signal_handler(int) { running = false; }
@@ -52,7 +54,10 @@ int main(int argc, char* argv[]) {
     auto recv_id = cfg.get_uint16("service.methods", "receive_large_data", 0x0002);
     auto echo_id = cfg.get_uint16("service.methods", "echo_large_data", 0x0003);
 
-    RpcServer server(service_id);
+    auto host = cfg.get_string("network.server", "host", "0.0.0.0");
+    auto port = cfg.get_uint16("network.server", "port", 30495);
+
+    RpcServer server(service_id, 0x01, Endpoint(host, port));
     TpManager tp_manager;
 
     server.register_method(send_id, [](uint16_t, uint16_t,
@@ -88,7 +93,8 @@ int main(int argc, char* argv[]) {
     }
 
     std::cout << "=== SOME/IP Large Messages Server (C++) ===" << std::endl;
-    std::cout << "Service 0x" << std::hex << service_id << std::dec << std::endl;
+    std::cout << "Service 0x" << std::hex << service_id << std::dec
+              << " on port " << port << std::endl;
     std::cout << "Press Ctrl+C to exit\n" << std::endl;
 
     while (running) std::this_thread::sleep_for(std::chrono::milliseconds(100));

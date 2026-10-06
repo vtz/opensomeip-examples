@@ -16,10 +16,12 @@
 #include <rpc/rpc_client.h>
 #include <rpc/rpc_types.h>
 #include <tp/tp_manager.h>
+#include <transport/endpoint.h>
 
 using namespace someip;
 using namespace someip::rpc;
 using namespace someip::tp;
+using namespace someip::transport;
 
 static std::vector<uint8_t> generate_test_data(size_t size) {
     std::vector<uint8_t> data(size);
@@ -38,9 +40,12 @@ int main(int argc, char* argv[]) {
     auto send_id = cfg.get_uint16("service.methods", "send_large_data", 0x0001);
     auto recv_id = cfg.get_uint16("service.methods", "receive_large_data", 0x0002);
     auto echo_id = cfg.get_uint16("service.methods", "echo_large_data", 0x0003);
+    auto server_host = cfg.get_string("network.client", "server_host", "127.0.0.1");
+    auto server_port = cfg.get_uint16("network.client", "server_port", 30495);
     auto client_id = cfg.get_uint16("network.client", "client_id", 0xABCD);
 
     RpcClient client(client_id);
+    client.set_remote_endpoint(Endpoint(server_host, server_port));
     TpManager tp_manager;
     tp_manager.initialize();
 
@@ -54,6 +59,7 @@ int main(int argc, char* argv[]) {
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
+    bool ok = true;
     size_t sizes[] = {2000, 10000, 50000};
     for (auto size : sizes) {
         std::cout << "\n--- Requesting " << size << " bytes ---" << std::endl;
@@ -63,10 +69,13 @@ int main(int argc, char* argv[]) {
         };
         auto result = client.call_method_sync(service_id, send_id, params);
         if (result.result == RpcResult::SUCCESS) {
+            bool size_ok = result.return_values.size() == size;
             std::cout << "Received " << result.return_values.size() << " bytes" << std::endl;
-            std::cout << "Size check: " << (result.return_values.size() == size ? "PASS" : "FAIL") << std::endl;
+            std::cout << "Size check: " << (size_ok ? "PASS" : "FAIL") << std::endl;
+            ok = size_ok && ok;
         } else {
             std::cout << "Request failed" << std::endl;
+            ok = false;
         }
     }
 
@@ -78,8 +87,10 @@ int main(int argc, char* argv[]) {
         bool match = echo_result.return_values == data;
         std::cout << "Echo " << echo_result.return_values.size()
                   << " bytes -- " << (match ? "PASS" : "MISMATCH") << std::endl;
+        ok = match && ok;
     } else {
         std::cout << "Echo failed" << std::endl;
+        ok = false;
     }
 
     std::cout << "\n=== All Tests Completed ===" << std::endl;
@@ -87,5 +98,5 @@ int main(int argc, char* argv[]) {
     tp_manager.shutdown();
     client.shutdown();
     std::cout << "\nClient finished." << std::endl;
-    return 0;
+    return ok ? 0 : 1;
 }

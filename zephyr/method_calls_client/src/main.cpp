@@ -11,10 +11,12 @@
 
 #include "rpc/rpc_client.h"
 #include "rpc/rpc_types.h"
+#include "transport/endpoint.h"
 #include "platform/thread.h"
 
 using namespace someip;
 using namespace someip::rpc;
+using namespace someip::transport;
 
 static constexpr uint16_t SERVICE_ID = 0x2000;
 static constexpr uint16_t ADD_ID     = 0x0001;
@@ -83,6 +85,7 @@ int main() {
     printf("=== SOME/IP Method Calls Client (Zephyr) ===\n");
 
     RpcClient client(CLIENT_ID);
+    client.set_remote_endpoint(Endpoint("127.0.0.1", SOMEIP_DEFAULT_RPC_PORT));
     if (!client.initialize()) {
         printf("[client] Failed to initialize\n");
         return 1;

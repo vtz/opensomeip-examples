@@ -11,10 +11,12 @@
 
 #include "rpc/rpc_server.h"
 #include "rpc/rpc_types.h"
+#include "transport/endpoint.h"
 #include "platform/thread.h"
 
 using namespace someip;
 using namespace someip::rpc;
+using namespace someip::transport;
 
 static constexpr uint16_t SERVICE_ID = 0x2000;
 static constexpr uint16_t ADD_ID     = 0x0001;
@@ -27,7 +29,7 @@ int main() {
     printf("=== SOME/IP Method Calls Server (Zephyr) ===\n");
     printf("Calculator service 0x%04X\n", SERVICE_ID);
 
-    RpcServer server(SERVICE_ID);
+    RpcServer server(SERVICE_ID, 0x01, Endpoint("127.0.0.1", SOMEIP_DEFAULT_RPC_PORT));
 
     server.register_method(ADD_ID, [](uint16_t, uint16_t,
             const std::vector<uint8_t>& in, std::vector<uint8_t>& out) -> RpcResult {
