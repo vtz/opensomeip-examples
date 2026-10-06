@@ -76,7 +76,11 @@ Install opensomeip v0.2.0 with `BUILD_CAPI=ON`, then see [rust/README.md](rust/R
 ```bash
 export OPENSOMEIP_DIR=$HOME/opensomeip-install
 cd rust
+
+# Terminal 1
 cargo run -p hello_world --bin hello_world_server
+
+# Terminal 2
 cargo run -p hello_world --bin hello_world_client
 ```
 

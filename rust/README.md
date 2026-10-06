@@ -15,10 +15,17 @@ export OPENSOMEIP_DIR=$HOME/opensomeip-install
 cd rust
 cargo run -p serialization
 cargo run -p message
+```
 
-# Terminal 1
+Terminal 1:
+
+```bash
 cargo run -p hello_world --bin hello_world_server
-# Terminal 2
+```
+
+Terminal 2:
+
+```bash
 cargo run -p hello_world --bin hello_world_client
 ```
 
