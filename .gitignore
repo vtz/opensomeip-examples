@@ -2,6 +2,9 @@
 build/
 cmake-build-*/
 
+# Rust
+rust/target/
+
 # Python
 __pycache__/
 *.py[cod]

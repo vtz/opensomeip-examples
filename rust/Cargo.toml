@@ -1,0 +1,12 @@
+[workspace]
+members = ["hello_world", "message", "serialization"]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+
+[workspace.dependencies]
+# Safe bindings live on feature/rust-bindings. `main` is still a stub.
+opensomeip = { git = "https://github.com/vtz/opensomeip-rs-bind", rev = "aae17840a3b0a3336616f8abc5b84a5cf607ab46" }

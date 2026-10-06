@@ -17,10 +17,12 @@
 #include <rpc/rpc_server.h>
 #include <rpc/rpc_types.h>
 #include <serialization/serializer.h>
+#include <transport/endpoint.h>
 
 using namespace someip;
 using namespace someip::rpc;
 using namespace someip::serialization;
+using namespace someip::transport;
 
 static std::atomic<bool> running{true};
 static void signal_handler(int) { running = false; }
@@ -34,7 +36,8 @@ struct SensorReading {
 
 class ComplexTypesServer {
 public:
-    explicit ComplexTypesServer(uint16_t service_id) : server_(service_id) {}
+    ComplexTypesServer(uint16_t service_id, const std::string& host, uint16_t port)
+        : server_(service_id, 0x01, Endpoint(host, port)) {}
 
     bool initialize(uint16_t pvd_id, uint16_t gsa_id, uint16_t ecs_id) {
         server_.register_method(pvd_id, [this](uint16_t, uint16_t,
@@ -124,12 +127,15 @@ int main(int argc, char* argv[]) {
     auto pvd_id = cfg.get_uint16("service.methods", "process_vehicle_data", 0x0001);
     auto gsa_id = cfg.get_uint16("service.methods", "get_sensor_array", 0x0002);
     auto ecs_id = cfg.get_uint16("service.methods", "echo_complex_struct", 0x0003);
+    auto host = cfg.get_string("network.server", "host", "0.0.0.0");
+    auto port = cfg.get_uint16("network.server", "port", 30494);
 
     std::cout << "=== SOME/IP Complex Types Server (C++) ===" << std::endl;
-    std::cout << "Service 0x" << std::hex << service_id << std::dec << std::endl;
+    std::cout << "Service 0x" << std::hex << service_id << std::dec
+              << " on port " << port << std::endl;
     std::cout << "Press Ctrl+C to exit\n" << std::endl;
 
-    ComplexTypesServer server(service_id);
+    ComplexTypesServer server(service_id, host, port);
     if (!server.initialize(pvd_id, gsa_id, ecs_id)) {
         std::cerr << "Failed to initialize server" << std::endl;
         return 1;

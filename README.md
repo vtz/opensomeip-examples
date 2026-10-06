@@ -1,6 +1,6 @@
 # opensomeip-examples
 
-Standalone examples showcasing the [opensomeip](https://github.com/vtz/opensomeip) SOME/IP stack in **C++**, **Python**, and **Zephyr RTOS** (with [Renode](https://renode.io/) simulation).
+Standalone examples showcasing the [opensomeip](https://github.com/vtz/opensomeip) SOME/IP stack in **C++**, **Python**, **Rust**, and **Zephyr RTOS** (with [Renode](https://renode.io/) simulation).
 
 Each example is wire-compatible across languages -- you can run a Python server with a C++ client (or vice versa). The Zephyr examples target embedded platforms and can run on `native_sim` (host simulation) or `s32k388_renode` (NXP S32K388 simulated in Renode).
 
@@ -11,6 +11,7 @@ opensomeip-examples/
 ├── config/            # Shared YAML configuration (read by both Python and C++)
 ├── python/            # Python examples (uses opensomeip from PyPI)
 ├── cpp/               # C++ examples (fetches opensomeip via CMake FetchContent)
+├── rust/              # Rust examples (opensomeip-rs-bind + C API)
 ├── zephyr/            # Zephyr RTOS examples (native_sim + S32K388 Renode)
 ├── scripts/           # Build & test helpers for Zephyr / Renode
 └── docker/            # Docker Compose for cross-language and Zephyr testing
@@ -18,15 +19,17 @@ opensomeip-examples/
 
 ## Examples
 
-| Example | Pattern | Python | C++ | Zephyr | Config |
-|---------|---------|--------|-----|--------|--------|
-| **hello_world** | Request/Response (UDP) | server, client | server, client | server, client | `config/hello_world.yaml` |
-| **method_calls** | Calculator RPC | server, client | server, client | server, client | `config/method_calls.yaml` |
-| **events** | Pub/Sub (sensors) | publisher, subscriber | publisher, subscriber | publisher, subscriber | `config/events.yaml` |
-| **sd_demo** | Service Discovery | server | server | -- | `config/sd_demo.yaml` |
-| **complex_types** | Serialization | server, client | server, client | -- | `config/complex_types.yaml` |
-| **large_messages** | TP segmentation | server, client | server, client | -- | `config/large_messages.yaml` |
-| **e2e_protection** | CRC / counter | standalone | standalone | standalone | `config/e2e_protection.yaml` |
+| Example | Pattern | Python | C++ | Rust | Zephyr | Config |
+|---------|---------|--------|-----|------|--------|--------|
+| **hello_world** | Request/Response (UDP) | server, client | server, client | server, client | server, client | `config/hello_world.yaml` |
+| **method_calls** | Calculator RPC | server, client | server, client | -- | server, client | `config/method_calls.yaml` |
+| **events** | Pub/Sub (sensors) | publisher, subscriber | publisher, subscriber | -- | publisher, subscriber | `config/events.yaml` |
+| **sd_demo** | Service Discovery | server | server | -- | -- | `config/sd_demo.yaml` |
+| **complex_types** | Serialization | server, client | server, client | -- | -- | `config/complex_types.yaml` |
+| **large_messages** | TP segmentation | server, client | server, client | -- | -- | `config/large_messages.yaml` |
+| **e2e_protection** | CRC / counter | standalone | standalone | -- | standalone | `config/e2e_protection.yaml` |
+| **serialization** | Integer encode/decode | -- | -- | standalone | -- | -- |
+| **message** | Header round-trip | -- | -- | standalone | -- | -- |
 
 ## Quick Start
 
@@ -64,6 +67,21 @@ cmake --build build -j$(nproc)
 
 # Terminal 2
 ./build/bin/hello_world_client
+```
+
+### Rust
+
+Install opensomeip v0.2.0 with `BUILD_CAPI=ON`, then see [rust/README.md](rust/README.md).
+
+```bash
+export OPENSOMEIP_DIR=$HOME/opensomeip-install
+cd rust
+
+# Terminal 1
+cargo run -p hello_world --bin hello_world_server
+
+# Terminal 2
+cargo run -p hello_world --bin hello_world_client
 ```
 
 ### Cross-Language (Python server + C++ client)

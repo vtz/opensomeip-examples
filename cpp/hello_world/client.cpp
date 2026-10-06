@@ -59,14 +59,15 @@ public:
         }
     }
 
-    void wait_for_response(int timeout_ms = 5000) {
+    bool wait_for_response(int timeout_ms = 5000) {
         std::unique_lock<std::mutex> lock(response_mutex);
         if (response_cv.wait_for(lock, std::chrono::milliseconds(timeout_ms),
                                  [] { return response_received; })) {
             std::cout << "Server responded: '" << server_response << "'" << std::endl;
-        } else {
-            std::cout << "Timeout waiting for server response" << std::endl;
+            return true;
         }
+        std::cout << "Timeout waiting for server response" << std::endl;
+        return false;
     }
 
     void on_message_received(MessagePtr message, const Endpoint&) override {
@@ -113,9 +114,9 @@ int main(int argc, char* argv[]) {
     if (!client.start()) return 1;
 
     client.send_hello("Hello from C++ Client!", server_host, server_port);
-    client.wait_for_response();
+    bool ok = client.wait_for_response();
 
     client.stop();
     std::cout << "Client finished." << std::endl;
-    return 0;
+    return ok ? 0 : 1;
 }

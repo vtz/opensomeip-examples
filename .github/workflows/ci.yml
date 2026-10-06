@@ -87,6 +87,62 @@ jobs:
         run: |
           timeout 5 python python/sd_demo/server.py || true
 
+  rust:
+    name: Rust Examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential cmake git
+
+      - name: Build and install opensomeip C API
+        run: |
+          git clone --depth 1 --branch v0.2.0 https://github.com/vtz/opensomeip.git "$RUNNER_TEMP/opensomeip"
+          cmake -S "$RUNNER_TEMP/opensomeip" -B "$RUNNER_TEMP/opensomeip-build" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/opensomeip-install" \
+            -DCMAKE_INSTALL_LIBDIR=lib \
+            -DBUILD_CAPI=ON \
+            -DBUILD_TESTS=OFF \
+            -DBUILD_EXAMPLES=OFF
+          cmake --build "$RUNNER_TEMP/opensomeip-build" -j"$(nproc)"
+          cmake --install "$RUNNER_TEMP/opensomeip-build"
+
+      - name: Build Rust examples
+        working-directory: rust
+        env:
+          OPENSOMEIP_DIR: ${{ runner.temp }}/opensomeip-install
+        run: cargo build --locked --workspace
+
+      - name: Test serialization
+        working-directory: rust
+        env:
+          OPENSOMEIP_DIR: ${{ runner.temp }}/opensomeip-install
+        run: cargo run --quiet -p serialization
+
+      - name: Test message round-trip
+        working-directory: rust
+        env:
+          OPENSOMEIP_DIR: ${{ runner.temp }}/opensomeip-install
+        run: cargo run --quiet -p message
+
+      - name: Test hello_world
+        working-directory: rust
+        env:
+          OPENSOMEIP_DIR: ${{ runner.temp }}/opensomeip-install
+        run: |
+          cargo run --quiet -p hello_world --bin hello_world_server &
+          SERVER_PID=$!
+          sleep 1
+          cargo run --quiet -p hello_world --bin hello_world_client
+          CLIENT_EXIT=$?
+          kill $SERVER_PID 2>/dev/null || true
+          wait $SERVER_PID 2>/dev/null || true
+          exit $CLIENT_EXIT
+
   cpp:
     name: C++ (${{ matrix.preset }})
     runs-on: ${{ matrix.os }}
@@ -229,7 +285,7 @@ jobs:
     env:
       ZEPHYR_SDK_VERSION: "1.0.1"
       ZEPHYR_VERSION: "v4.4.0"
-      OPENSOMEIP_COMMIT: "v0.1.0"
+      OPENSOMEIP_COMMIT: "v0.2.0"
     steps:
       - uses: actions/checkout@v4
 

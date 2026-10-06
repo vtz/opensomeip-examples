@@ -98,7 +98,7 @@ build_app() {
 
     local extra_args=()
     if [ "$BOARD" = "s32k388_renode" ]; then
-        extra_args+=("-DBOARD_ROOT=$OPENSOMEIP_ROOT/zephyr")
+        extra_args+=("-DBOARD_ROOT=$OPENSOMEIP_ROOT/zephyr" "-DSOC_ROOT=$OPENSOMEIP_ROOT/zephyr")
     fi
 
     west build -b "$BOARD" "$app_dir" -d "$build_dir" --pristine auto -- \
