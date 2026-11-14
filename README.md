@@ -71,7 +71,7 @@ cmake --build build -j$(nproc)
 
 ### Rust
 
-Install opensomeip v0.2.0 with `BUILD_CAPI=ON`, then see [rust/README.md](rust/README.md).
+Install opensomeip v0.2.1 with `BUILD_CAPI=ON`, then see [rust/README.md](rust/README.md).
 
 ```bash
 export OPENSOMEIP_DIR=$HOME/opensomeip-install
