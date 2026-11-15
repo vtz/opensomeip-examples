@@ -1,6 +1,6 @@
 # Rust examples
 
-Examples that use the safe Rust bindings in [opensomeip-rs-bind](https://github.com/vtz/opensomeip-rs-bind) (`feature/rust-bindings`). They link the opensomeip C API, so install opensomeip v0.2.1 with `BUILD_CAPI=ON` first.
+Examples that use the safe Rust bindings in [opensomeip-rs-bind](https://github.com/vtz/opensomeip-rs-bind) (`feature/rust-bindings`). They link the opensomeip C API, so install opensomeip v0.2.2 with `BUILD_CAPI=ON` first.
 
 ```bash
 cmake -S /path/to/opensomeip -B /tmp/opensomeip-build \
