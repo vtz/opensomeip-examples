@@ -100,7 +100,7 @@ jobs:
 
       - name: Build and install opensomeip C API
         run: |
-          git clone --depth 1 --branch v0.2.1 https://github.com/vtz/opensomeip.git "$RUNNER_TEMP/opensomeip"
+          git clone --depth 1 --branch v0.2.2 https://github.com/vtz/opensomeip.git "$RUNNER_TEMP/opensomeip"
           cmake -S "$RUNNER_TEMP/opensomeip" -B "$RUNNER_TEMP/opensomeip-build" \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/opensomeip-install" \
@@ -285,7 +285,7 @@ jobs:
     env:
       ZEPHYR_SDK_VERSION: "1.0.1"
       ZEPHYR_VERSION: "v4.4.0"
-      OPENSOMEIP_COMMIT: "v0.2.1"
+      OPENSOMEIP_COMMIT: "v0.2.2"
     steps:
       - uses: actions/checkout@v4
 
